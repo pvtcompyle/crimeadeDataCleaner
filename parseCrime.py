@@ -3,37 +3,19 @@ import pandas as pd
 import glob
 import urllib.request
 
-def getcsv():
-    extension = 'csv'
-    files = glob.glob('*.{}'.format(extension))
-    return(files)
-
-def getDataFrame(file):
-    data_frame = pd.read_csv(file, sep=',')
-    return(data_frame)
-
-def write_to_file(array, outfile):
-    try:
-        pd.DataFrame(array).to_csv(outfile, index=False, header=True)
-    except:
-        print('Could not write to ',outfile, ': Access Denied.')
-        if not input('Try again? (y/n)') == 'y': return
-        write_to_file(array, outfile)
-
-def fixDates(inDate):
-    print(inDate)
-
 def main():
     # download latest
+    print('Downloading Denver crime data ...')
     url = 'https://www.denvergov.org/media/gis/DataCatalog/crime/csv/crime.csv'
     urllib.request.urlretrieve(url, 'crime.csv')
+    print('Download complete .... \n\n')
 
     # define static input and output file names
     crimeReport = 'crime.csv'
     newFile = 'cleanCrime.csv'
 
     # create dataframe using infile
-    df = getDataFrame(crimeReport)
+    df = pd.read_csv(crimeReport, sep=',')
 
     # parse dataframe columns to just needed columns
     df = df[['OFFENSE_TYPE_ID', 'OFFENSE_CATEGORY_ID', 'FIRST_OCCURRENCE_DATE', 'INCIDENT_ADDRESS', 'GEO_X', 'GEO_Y', 'GEO_LON', 'GEO_LAT']]
@@ -42,13 +24,19 @@ def main():
     df = df.dropna(subset=['GEO_LON', 'GEO_LAT'])
     
     # convert first occurrence dates to datetime format
+    print('Converting dates to MySQL friendly DATETIME format ...')
+    print('This may take several minutes.')
     df['FIRST_OCCURRENCE_DATE']=pd.to_datetime(df['FIRST_OCCURRENCE_DATE'])
+    print('Conversion complete ... \n\n')
     
     # remove commas from all fields
     df = df.replace(',', '', regex=True)
     
     # write dataframe to file
-    write_to_file(df, newFile)
+    print('Writting new file ...')
+    pd.DataFrame(df).to_csv(newFile, index=False, header=True)
+    print('Write complete. Have a nice day. \n\n')
+   
     print(df.info)
 
 
